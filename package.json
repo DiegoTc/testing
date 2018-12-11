@@ -1,0 +1,30 @@
+{
+  "name": "testing",
+  "version": "1.0.0",
+  "description": "This is a qa exercise for wunderflats",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "mocha testing.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DiegoTc/testing.git"
+  },
+  "author": "Diego",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DiegoTc/testing/issues"
+  },
+  "homepage": "https://github.com/DiegoTc/testing#readme",
+  "dependencies": {
+    "assert": "^1.4.1",
+    "chromedriver": "^2.44.1",
+    "fakerator": "^0.3.0",
+    "firefox-profile": "^1.2.0",
+    "german-postal-codes": "^1.1.0",
+    "mocha": "^5.2.0",
+    "selenium-webdriver": "^4.0.0-alpha.1",
+    "zip-to-city": "^0.1.1"
+  }
+}
