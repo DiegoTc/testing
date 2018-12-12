@@ -127,10 +127,12 @@ suite(function(env) {
       await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
       await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
       var mail = await driver.findElement(By.name('email')).getAttribute("value");
-      var newmail = 'wunderflats'+Date.now()+"@mailinator.com";
+      var newmail = 'wunderflats1'+Date.now()+"@mailinator.com";
+      await driver.executeScript("document.getElementsByName('email')[0].value=''");
       await driver.findElement(By.name('email')).sendKeys(newmail);
       await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
       email = await driver.findElement(By.name('email')).getAttribute("value");
+      console.log("new email: "+email);
       assert.notEqual(mail, email);
     });
 
@@ -178,13 +180,12 @@ suite(function(env) {
       await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
       await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
       var state = await driver.findElement(By.name('address[region]')).getAttribute("value");
-      var rand = Math.floor((Math.random() * 15) + 1);
+      var rand = Math.floor((Math.random() * 14) + 1);
       await driver.findElement(By.name('address[region]')).sendKeys(states[rand]);
       await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
       var newState = await driver.findElement(By.name('address[region]')).getAttribute("value");
       assert.notEqual(state,newState);
     });
-
     it('Change Country',async function(){
       driver = new Builder().forBrowser('chrome').build();
       await driver.get('https://en-master.wunderflats.xyz/my/account');
@@ -276,7 +277,7 @@ suite(function(env) {
       await driver.findElement(By.name('password')).sendKeys(password);
       await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
       await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
-      await driver.executeScript("document.getElementsByName('email')[0].value='kjhghgfds@gf.com'");
+      await driver.executeScript("document.getElementsByName('email')[0].value=''");
       await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
       await driver.wait(until.elementLocated(By.className('ErrorIndicator ErrorIndicator--invalid')),12000);
     });
