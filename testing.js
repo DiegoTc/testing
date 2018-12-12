@@ -3,17 +3,31 @@ require('chromedriver');
 var Fakerator = require("fakerator");
 var assert = require('assert');
 var fakerator = Fakerator("de-DE")
+var fs = require('fs');
 const { Browser, Builder, By, Key, until } = require('selenium-webdriver');
 const { ignore, suite } = require('selenium-webdriver/testing');
-
+var states=['Baden-Württemberg','Bavaria','Berlin','Brandenburg','Bremen','Hamburg ','Hesse','Lower Saxony','Nordrhein-Westfalen','Rheinland-Pfalz','Saarland','Sachsen','Sachsen-Anhalt','Schleswig-Holstein','Thuringia'];
 const codes = require('german-postal-codes');
 const unzip = require('zip-to-city')
-const email = 'wunderflats'+Date.now()+"@mailinator.com";
-const password = fakerator.internet.password(12);
-let driver;
+var email = 'wunderflats'+Date.now()+"@mailinator.com";
+var password = fakerator.internet.password(12);
+var driver;
 console.log("email: "+email);
 console.log("password: "+ password);
 
+var account = [];
+account.push(fakerator.names.firstName());
+account.push(fakerator.names.lastName());
+account.push(email)
+var phone = fakerator.phone.number();
+phone = phone.replace(/\+49\-/,"");
+while(phone.length >=13){
+  phone = fakerator.phone.number();
+  phone = phone.replace(/\+49\-/,"");
+}
+
+account.push(phone)
+account.push(password)
 
 suite(function(env) {
   describe('Wunderflats 1 Test', function() {
@@ -26,24 +40,27 @@ suite(function(env) {
       await driver.get('https://en-master.wunderflats.xyz/my/account');
       await driver.findElement(By.className('Modal-footer-link')).click();
       var name = fakerator.names.firstName();
-      await driver.findElement(By.name('firstName')).sendKeys(name);
-      await driver.findElement(By.name('lastName')).sendKeys(fakerator.names.lastName());
-      await driver.findElement(By.name('email')).sendKeys(email);
-      var phone = fakerator.phone.number();
-      phone = phone.replace(/\+49\-/,"");
-      while(phone.length >=15){
-        phone = fakerator.phone.number();
-        phone = phone.replace(/\+49\-/,"");
-      }
-
-      await driver.findElement(By.className('Input CustomPhoneNumberInput-textInput CustomPhoneNumberInput-phoneNumber qa-phoneNumber')).sendKeys(phone);
-      await driver.findElement(By.name('password')).sendKeys(password);
-      await driver.findElement(By.name('passwordConfirmation')).sendKeys(password);
+      await driver.findElement(By.name('firstName')).sendKeys(account[0]);
+      await driver.findElement(By.name('lastName')).sendKeys(account[1]);
+      await driver.findElement(By.name('email')).sendKeys(account[2]);
+      await driver.findElement(By.className('Input CustomPhoneNumberInput-textInput CustomPhoneNumberInput-phoneNumber qa-phoneNumber')).sendKeys(account[3]);
+      await driver.findElement(By.name('password')).sendKeys(account[4]);
+      await driver.findElement(By.name('passwordConfirmation')).sendKeys(account[4]);
       await driver.findElement(By.name('tos')).click();
       await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
       await driver.wait(until.titleIs('Rent furnished apartments - Wunderflats'), 10000);
     });
-    afterEach(() => driver && driver.quit());
+    afterEach(function(){
+      if (this.currentTest.state == 'failed') {
+            var filename = encodeURIComponent(this.currentTest.title.replace(/\s+/g, '-'));
+            var d = new Date();
+            filename='screenshots/'+filename+"_"+d.getFullYear()+"_"+d.getMonth()+"_"+d.getDate()+".png";
+            driver.takeScreenshot().then(function(data){
+              fs.writeFileSync(filename,data,'base64');
+            });
+      }
+      driver && driver.quit();
+    });
   });
 
   describe('Wunderflats 2 Test', function(){
@@ -57,11 +74,22 @@ suite(function(env) {
       await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
     });
 
-    afterEach(() => driver && driver.quit());
+    afterEach(function(){
+      if (this.currentTest.state == 'failed') {
+            var filename = encodeURIComponent(this.currentTest.title.replace(/\s+/g, '-'));
+            var d = new Date();
+            filename='screenshots/'+filename+"_"+d.getFullYear()+"_"+d.getMonth()+"_"+d.getDate()+".png";
+            driver.takeScreenshot().then(function(data){
+              fs.writeFileSync(filename,data,'base64');
+            });
+      }
+      driver && driver.quit();
+    });
   });
 
-  describe('Wunderflats 3 Test', function(){
+  describe('Wunderflats 3 Test - Changing parameters individually', function(){
     this.timeout(0)
+
     it('Change name',async function(){
       driver = new Builder().forBrowser('chrome').build();
       await driver.get('https://en-master.wunderflats.xyz/my/account');
@@ -87,9 +115,23 @@ suite(function(env) {
       var lastname = await driver.findElement(By.name('lastName')).getAttribute("value");
       await driver.findElement(By.name('lastName')).sendKeys(fakerator.names.lastName());
       await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
-      //await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
       var newlastname = await driver.findElement(By.name('lastName')).getAttribute("value");
       assert.notEqual(lastname, newlastname);
+    });
+
+    it('Change email',async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      var mail = await driver.findElement(By.name('email')).getAttribute("value");
+      var newmail = 'wunderflats'+Date.now()+"@mailinator.com";
+      await driver.findElement(By.name('email')).sendKeys(newmail);
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      email = await driver.findElement(By.name('email')).getAttribute("value");
+      assert.notEqual(mail, email);
     });
 
     it('Change address', async function(){
@@ -128,10 +170,129 @@ suite(function(env) {
       assert.notEqual(information,newinformation);
     });
 
-    
+    it('Change State', async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      var state = await driver.findElement(By.name('address[region]')).getAttribute("value");
+      var rand = Math.floor((Math.random() * 15) + 1);
+      await driver.findElement(By.name('address[region]')).sendKeys(states[rand]);
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      var newState = await driver.findElement(By.name('address[region]')).getAttribute("value");
+      assert.notEqual(state,newState);
+    });
 
-    afterEach(() => driver && driver.quit());
+    it('Change Country',async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      var country = await driver.findElement(By.name('address[country]')).getAttribute('value');
+      var newValue=fakerator.address.countryCode();
+      await driver.executeScript('document.getElementById("addressCountry").value="'+newValue+'"');
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      var newcountry = await driver.findElement(By.name('address[country]')).getAttribute('value');
+      assert.notEqual(country,newcountry);
+    });
+
+    it('Change language', async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      var language = await driver.findElement(By.name('language')).getAttribute('value');
+      var optlanguage = language ==='en' ? 'de':'en';
+      await driver.executeScript('document.getElementsByName("language")[0].value="'+optlanguage+'"');
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      var newlanguage = await driver.findElement(By.name('language')).getAttribute('value');
+      assert.notEqual(language,newlanguage);
+    });
+
+    it('Change nationality',async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      var nationality = await driver.findElement(By.name('nationality')).getAttribute('value');
+      var newValue=fakerator.address.countryCode();
+      await driver.executeScript('document.getElementsByName("nationality")[0].value="'+newValue+'"');
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      var newnationality = await driver.findElement(By.name('address[country]')).getAttribute('value');
+      assert.notEqual(nationality,newnationality);
+    });
+
+    afterEach(function(){
+      if (this.currentTest.state == 'failed') {
+            var filename = encodeURIComponent(this.currentTest.title.replace(/\s+/g, '-'));
+            var d = new Date();
+            filename='screenshots/'+filename+"_"+d.getFullYear()+"_"+d.getMonth()+"_"+d.getDate()+".png";
+            driver.takeScreenshot().then(function(data){
+              fs.writeFileSync(filename,data,'base64');
+            });
+      }
+      driver && driver.quit();
+    });
   });
 
+  describe('Wunderflats 4 - Test Not able to save', function(){
+    this.timeout(0)
+    it('Not able to save empty name', async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      await driver.executeScript("document.getElementsByName('firstName')[0].value=''");
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      await driver.wait(until.elementLocated(By.className('ErrorIndicator ErrorIndicator--invalid')),12000);
+    });
+
+    it('Not able to save empty last name', async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      await driver.executeScript("document.getElementsByName('lastName')[0].value=''");
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      await driver.wait(until.elementLocated(By.className('ErrorIndicator ErrorIndicator--invalid')),12000);
+    });
+
+    it('Not able to save empty email', async function(){
+      driver = new Builder().forBrowser('chrome').build();
+      await driver.get('https://en-master.wunderflats.xyz/my/account');
+      await driver.findElement(By.name('email')).sendKeys(email);
+      await driver.findElement(By.name('password')).sendKeys(password);
+      await driver.findElement(By.className('Button Button--primary Button--fullWidth')).click();
+      await driver.wait(until.titleIs('Profile - Wunderflats'), 10000);
+      await driver.executeScript("document.getElementsByName('email')[0].value='kjhghgfds@gf.com'");
+      await driver.findElement(By.className('UserProfileForm-submitButton btn btn-action btn-full')).click();
+      await driver.wait(until.elementLocated(By.className('ErrorIndicator ErrorIndicator--invalid')),12000);
+    });
+
+    afterEach(function(){
+      if (this.currentTest.state == 'failed') {
+            var filename = encodeURIComponent(this.currentTest.title.replace(/\s+/g, '-'));
+            var d = new Date();
+            filename='screenshots/'+filename+"_"+d.getFullYear()+"_"+d.getMonth()+"_"+d.getDate()+".png";
+            driver.takeScreenshot().then(function(data){
+              fs.writeFileSync(filename,data,'base64');
+            });
+      }
+      driver && driver.quit();
+    });
+
+  });
 
 });
