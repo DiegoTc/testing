@@ -23,7 +23,7 @@ This is the main part of the test, as in this main case, the account is created.
 
 ###### Important
 Take into consideration some times, test will fail as the phone number is wrong. See image below. (Couldn't identify correctly the format for phone numbers)
-![Error](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)
+![Error](https://raw.githubusercontent.com/DiegoTc/testing/master/screenshots/Creating-account_2018_11_12.png)
 
 
 
